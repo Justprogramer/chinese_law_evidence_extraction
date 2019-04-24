@@ -27,20 +27,24 @@ def split_paragraph(str):
     return re.split(r'[\n|\r]{0,2}', str)
 
 
+# 替换所有的空白分隔符
 def clean_text(str):
     if str is None or is_nan(str):
         return ""
     return re.sub("[\r\n\\s]+", "", str)
 
 
+# 判断文件是否存在
 def is_file_exist(path):
     return os.path.exists(path)
 
 
+# 判断是否是NaN值
 def is_nan(num):
     return num != num
 
 
+# 抽取主要的举证质证段落
 def check_evidence_paragraph(document):
     evidence_start_pattern = r"审.*(?:被告|原告){0,1}.*(?:提供|举示|出示){0,1}.*(?:质证|证据|举证)"
     anti_evidence_start_patter = r"审.*[《|》]?.*(?:规定|责任|义务)"

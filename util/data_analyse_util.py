@@ -1,4 +1,5 @@
 # -*-coding:utf-8-*-
+import argparse
 import codecs
 import json
 import os
@@ -10,8 +11,6 @@ from win32com import client as wc
 
 import Args
 import util.common_util as my_util
-
-import argparse
 
 # 证据名称列表
 evidence_list = list()
@@ -63,6 +62,7 @@ def save():
     dump_data(train, train_path)
 
 
+# 从excel中加载数据
 def analyse_data_excel_content(title=None, content=None):
     if title is None and content is None:
         rows = pd.read_excel(Args.data_excel_content, sheet_name=0, header=0)
@@ -75,6 +75,7 @@ def analyse_data_excel_content(title=None, content=None):
                           if paragraph is not None and len(paragraph.strip()) > 0]
         new_paragraphs = list()
         new_paragraph = ""
+        # 合并发言人段落
         for paragraph in old_paragraphs:
             if my_util.check_paragraph(paragraph):
                 if new_paragraph is not None and len(new_paragraph) > 0:
@@ -88,6 +89,7 @@ def analyse_data_excel_content(title=None, content=None):
             for paragraph in new_paragraphs]
 
 
+# 从doc和docx中加载文档，暂不使用
 def analyse_dir_document():
     listdir = os.listdir(Args.raw_file_path)
     if not os.path.exists(Args.temp_file_path):
@@ -141,6 +143,7 @@ def analyse_data_excel_tags():
                     evidence_list.append(t)
 
 
+# 抽取主要举证质证段落
 def extract_evidence_paragraph():
     for d in content_dict:
         start, end = my_util.check_evidence_paragraph(content_dict[d])
@@ -206,6 +209,7 @@ def create_train_data():
                 # train.append(([word for word in sentence], tag))
 
 
+# 标签统计
 def statistic_data():
     global o_tag_count, e_tag_count, t_tag_count, c_tag_count, a_tag_count, other_tag_count
     for sentence, tag in train:
@@ -224,11 +228,13 @@ def statistic_data():
                 other_tag_count += 1
 
 
+# 保存数据
 def dump_data(data, path):
     with codecs.open(path, "w", "utf-8") as f:
         f.write(json.dumps(data, ensure_ascii=False))
 
 
+# 写入日志
 def dump_log():
     with codecs.open("log.txt", "a", "utf-8") as f:
         f.write("excel文本数据：%s条\n" % len(content_dict))
@@ -244,6 +250,7 @@ def dump_log():
         f.write("\n")
 
 
+# 加载数据
 def load_data(data_path):
     content = ""
     with codecs.open(data_path, "r", "utf-8") as f:
@@ -264,11 +271,10 @@ if __name__ == '__main__':
         statistic_data()
         save()
         dump_log()
-
     else:
         if my_util.is_file_exist(content_path) \
                 and my_util.is_file_exist(tag_path) \
-                and my_util.is_file_exist(evidence_paragraph_path)\
+                and my_util.is_file_exist(evidence_paragraph_path) \
                 and my_util.is_file_exist(train_path):
             evidence_paragraph_dict = load_data(evidence_paragraph_path)
             content_dict = load_data(content_path)
