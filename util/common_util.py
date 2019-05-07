@@ -2,6 +2,8 @@
 import platform
 import re
 import os
+import pickle
+import numpy as np
 
 
 # 将中文括号替换成英文括号
@@ -44,6 +46,25 @@ def is_nan(num):
     return num != num
 
 
+def tokens2id_array(items, voc, oov_id=1):
+    """
+    将词序列映射为id序列
+    Args:
+        items: list, 词序列
+        voc: item -> id的映射表
+        oov_id: int, 未登录词的编号, default is 1
+    Returns:
+        arr: np.array, shape=[max_len,]
+    """
+    arr = np.zeros((len(items),), dtype='int32')
+    for i, item in enumerate(items):
+        if item in voc:
+            arr[i] = voc[item]
+        else:
+            arr[i] = oov_id
+    return arr
+
+
 # 抽取主要的举证质证段落
 def check_evidence_paragraph(document):
     evidence_start_pattern = r"审.*(?:被告|原告){0,1}.*(?:提供|举示|出示){0,1}.*(?:质证|证据|举证)"
@@ -63,6 +84,38 @@ def check_evidence_paragraph(document):
             else:
                 return start, end
     return start, len(document) - 1
+
+
+# 替换数字
+def normalize_word(word):
+    new_word = ''
+    for c in word:
+        if c.isdigit():
+            new_word += '0'
+        else:
+            new_word += c
+    return new_word
+
+
+def read_bin(path):
+    """读取二进制文件
+    Args:
+        path: str, 二进制文件路径
+    Returns:
+        pkl_ob: pkl对象
+    """
+    file = open(path, 'rb')
+    return pickle.load(file)
+
+
+def dump_pkl_data(ob, path):
+    """将python对象写入pkl文件
+        Args:
+            path: str, pkl文件路径
+            ob: python的list, dict, ...
+        """
+    with open(path, 'wb') as file_pkl:
+        pickle.dump(ob, file_pkl)
 
 
 if __name__ == '__main__':

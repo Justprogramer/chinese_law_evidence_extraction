@@ -1,5 +1,4 @@
 # -*-coding:utf-8-*-
-import argparse
 import codecs
 import json
 import os
@@ -181,6 +180,8 @@ def create_train_data():
                         for i in range(find_t + 1, find_t + len(t)):
                             tag[i] = "I-T"
                     for c in C:
+                        if len(c) <= 1:
+                            continue
                         find_c = str(sentence).find(c)
                         if find_c != -1:
                             is_change = True
@@ -188,6 +189,8 @@ def create_train_data():
                             for i in range(find_c + 1, find_c + len(c)):
                                 tag[i] = "I-C"
                     for o in O:
+                        if len(o) <= 1:
+                            continue
                         find_o = str(sentence).find(o)
                         if find_o != -1:
                             is_change = True
@@ -259,14 +262,11 @@ def load_data(data_path):
     return json.loads(content)
 
 
-if __name__ == '__main__':
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("process_type", type=str, help="数据处理的格式，load加载，create构建，第一次使用create")
-    args = arg_parser.parse_args()
+def main(options):
     with codecs.open("log.txt", "a", "utf-8") as fp:
         fp.write("开始处理数据：[%s]" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     start = time.time()
-    if args.process_type is "create":
+    if options:
         analyse_data()
         statistic_data()
         save()
@@ -276,9 +276,9 @@ if __name__ == '__main__':
                 and my_util.is_file_exist(tag_path) \
                 and my_util.is_file_exist(evidence_paragraph_path) \
                 and my_util.is_file_exist(train_path):
-            evidence_paragraph_dict = load_data(evidence_paragraph_path)
-            content_dict = load_data(content_path)
-            tag_dic = load_data(tag_path)
+            load_data(evidence_paragraph_path)
+            load_data(content_path)
+            load_data(tag_path)
             # train = load_data(train_path)
             create_train_data()
             statistic_data()
@@ -291,3 +291,7 @@ if __name__ == '__main__':
             dump_log()
     with codecs.open("log.txt", "a", "utf-8") as fp:
         fp.write("处理数据结束：[%s], 费时：[%s]" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), time.time() - start))
+
+
+if __name__ == '__main__':
+    main(True)
