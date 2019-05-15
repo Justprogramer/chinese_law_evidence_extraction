@@ -141,6 +141,7 @@ class SLTrainer(object):
             return labels_gold, labels_pred
         return labels_pred
 
+
     def decay_learning_rate(self, epoch, init_lr):
         """衰减学习率
 

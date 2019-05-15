@@ -5,6 +5,26 @@
 """
 
 
+def load_tencent_embed(path_embed, word2id_dict):
+    import codecs
+    import numpy as np
+    word_dim = 0
+    word_embed_dict = {}
+    with codecs.open(path_embed, 'r', encoding='utf-8', errors='ignore') as f:
+        first_line = True
+        for line in f:
+            if first_line:
+                first_line = False
+                word_dim = int(line.rstrip().split()[1])
+                continue
+            tokens = line.rstrip().split(' ')
+            if tokens[0] in word2id_dict:
+                word_embed_dict[tokens[0]] = np.asarray([float(x) for x in tokens[1:]])
+            if len(word_embed_dict) == len(word2id_dict):
+                break
+    return word_embed_dict, word_dim
+
+
 def load_embed(path_embed):
     """
     读取预训练的embedding
@@ -48,7 +68,7 @@ def build_word_embed(word2id_dict, path_embed, seed=137):
         unknown_count: int, 未匹配的词数
     """
     import numpy as np
-    word2vec_model, word_dim = load_embed(path_embed)
+    word2vec_model, word_dim = load_tencent_embed(path_embed, word2id_dict)
     word_count = len(word2id_dict) + 1  # 0 is for padding value
     np.random.seed(seed)
     scope = np.sqrt(3. / word_dim)
@@ -71,10 +91,12 @@ def build_word_embed(word2id_dict, path_embed, seed=137):
 
 if __name__ == '__main__':
     import time
+    import Args
+    from util.common_util import *
 
+    token2id_dict = read_bin("../data/alphabet/token2id_dict.pkl")["word"]
     print("开始加载embedding：[%s]" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     start = time.time()
-    vectors, dim = load_embed("../data/resources/sgns.renmin.bigram-char")
+    vectors, dim = load_tencent_embed(os.path.join("..", Args.embedding_path), token2id_dict)
     print("处理数据结束：[%s], 费时：[%s]" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), time.time() - start))
     print("vector size:%i" % dim)
-    print("陶:[%s]" % vectors["陶"])

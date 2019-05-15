@@ -155,3 +155,13 @@ class SLModel(nn.Module):
                 tags_list.append(best_paths[i].cpu().data.numpy()[:actual_lens.data[i]])
 
         return tags_list
+
+    def predict_single(self, feed_tensor_dict):
+        labels_pred = []
+        logits = self.forward(**feed_tensor_dict)
+        # mask
+        mask = feed_tensor_dict[str(self.feature_names[0])] > 0
+        actual_lens = torch.sum(feed_tensor_dict[self.feature_names[0]] > 0, dim=1).int()
+        labels_batch = self.predict(logits, actual_lens, mask)
+        labels_pred.extend(labels_batch)
+        return labels_pred

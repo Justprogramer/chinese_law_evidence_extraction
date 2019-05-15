@@ -12,8 +12,8 @@ data_params:
   path_test_result: ./data/test.txt.output  # default is path_test+'.output'
 
   # 定义特征列数, 以及特征别名
-  feature_cols: [0]
-  feature_names: [word]  # feature alias
+  feature_cols: [0,1]
+  feature_names: [word,pos]  # feature alias
 
   # alphabet参数及存放路径
   alphabet_params:
@@ -22,7 +22,7 @@ data_params:
 
   # 预训练特征向量路径, 按feature_names顺序设置, 没有预训练向量则设为null
   path_pretrain:
-    - ./data/resources/sgns.renmin.bigram-char
+    - ./Tencent AILab ChineseEmbedding/Tencent_AILab_ChineseEmbedding.txt
     - null
     - null
 
@@ -56,9 +56,9 @@ model_params:
 
   # train parameters
   dev_size: 0.1  # 若没有`path_dev`参数, 则根据该值划分训练集
-  batch_size: 20
+  batch_size: 50
   dropout_rate: 0.5
-  learning_rate: 0.015
+  learning_rate: 0.03
   optimizer: sgd  # sgd, adam, adadelta, ...
   l2_rate: 1.0e-8
   lr_decay: 0.05  # only for sgd optimizer

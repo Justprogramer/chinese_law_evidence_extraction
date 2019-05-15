@@ -67,9 +67,9 @@ def tokens2id_array(items, voc, oov_id=1):
 
 # 抽取主要的举证质证段落
 def check_evidence_paragraph(document):
-    evidence_start_pattern = r"审.*(?:被告|原告){0,1}.*(?:提供|举示|出示){0,1}.*(?:质证|证据|举证)"
+    evidence_start_pattern = r"(?:被告|原告){0,1}.*(?:提供|举示|出示){0,1}.*(?:质证|证据|举证)"
     anti_evidence_start_patter = r"审.*[《|》]?.*(?:规定|责任|义务)"
-    evidence_end_pattern = r"(?:质证|证据|举证|调查).*(?:结束|完毕)"
+    evidence_end_pattern = r"(?:质证|证据|举证|调查).*(?:结束|完毕|不再进行)"
     start = 0
     for index, paragraph in enumerate(document):
         paragraph = "。".join(paragraph)
@@ -77,6 +77,7 @@ def check_evidence_paragraph(document):
                 and re.search(evidence_start_pattern, paragraph) \
                 and not re.search(anti_evidence_start_patter, paragraph):
             start = index
+            continue
         if re.search(evidence_end_pattern, paragraph):
             end = index
             if end <= start:

@@ -1,5 +1,6 @@
 # -*-coding:utf-8-*-
-from collections import Counter
+import sys
+from optparse import OptionParser
 
 import torch
 import yaml
@@ -11,23 +12,23 @@ from nn.dataset import *
 from nn.modules import *
 from util.common_util import *
 from util.data_analyse_util import *
-from util.data_analyse_util import main as data_anlyse_main
 from util.embedding import *
 
 
-def extract_feature_dict(feature_cols, feature_names, feature_dict,
+def extract_feature_dict(feature_cols, feature_names, feature_dict, data_path,
                          sentence_lens=None, normalize=True, has_label=True):
     """从数据中统计特征
     Args:
         feature_cols: list(int), 特征的列数
         feature_names: list(str), 特征名称
         feature_dict: dict
+        data_path: str ,路径
         sentence_lens: list, 用于记录句子长度
         normalize: bool, 是否标准化单词
         has_label: bool, 数据是否带有标签
     """
     data_idx = 0
-    data = load_data('./data/train.json')
+    data = load_data(data_path)
     for i, train_list in enumerate(data):
         update_feature_dict(
             train_list, feature_dict, feature_cols, feature_names,
@@ -42,7 +43,7 @@ def update_feature_dict(train_list, feature_dict, feature_cols, feature_names,
     """
     更新特征字典
     Args:
-        train_list: list(list)
+        train_list: list(list) [[word,tag,fileName],...]
         feature_dict: dict
         feature_cols: list(int)
         feature_names: list(str)
@@ -55,7 +56,7 @@ def update_feature_dict(train_list, feature_dict, feature_cols, feature_names,
                 token = normalize_word(token)
             feature_dict[feature_names[i]].update([token])
     if has_label:
-        for label in train_list[-1]:
+        for label in train_list[1]:
             feature_dict['label'].add(label)
 
 
@@ -81,10 +82,14 @@ def pre_processing(configs):
     sentence_lens = []
     # 处理训练、开发、测试数据
     print('读取文件...')
-    data_count, data = extract_feature_dict(
-        feature_cols, feature_names, feature_dict, sentence_lens,
+    data_count, train_data = extract_feature_dict(
+        feature_cols, feature_names, feature_dict, path_train, sentence_lens,
         normalize=normalize, has_label=True, )
     print('`{0}`: {1}'.format(path_train, data_count))
+    data_count, test_data = extract_feature_dict(
+        feature_cols, feature_names, feature_dict, path_test, sentence_lens,
+        normalize=normalize, has_label=True, )
+    print('`{0}`: {1}'.format(path_test, data_count))
 
     # 构建label alphabet
     token2id_dict = dict()
@@ -125,20 +130,36 @@ def pre_processing(configs):
             path_pkl = os.path.join(os.path.dirname(path_pretrain_list[i]), '{0}.embed.pkl'.format(feature_name))
             dump_pkl_data(word_embed_table, path_pkl)
     # 将token转成id
-    data_tokens2id_dict = {}
+    # train
+    train_data_tokens2id_dict = {}
     for j, col in enumerate(feature_cols):
         feature_name = feature_names[j]
-        for sentence in data:
+        for sentence in train_data:
             array = tokens2id_array(sentence[col], token2id_dict[feature_name])
-            if feature_name not in data_tokens2id_dict:
-                data_tokens2id_dict[feature_name] = list()
-            data_tokens2id_dict[feature_name].append(array)
-            if "label" not in data_tokens2id_dict:
-                data_tokens2id_dict["label"] = list()
-            label_arr = tokens2id_array(sentence[-1], token2id_dict['label'])
-            data_tokens2id_dict['label'].append(label_arr)
+            if feature_name not in train_data_tokens2id_dict:
+                train_data_tokens2id_dict[feature_name] = list()
+            train_data_tokens2id_dict[feature_name].append(array)
+            if "label" not in train_data_tokens2id_dict:
+                train_data_tokens2id_dict["label"] = list()
+            label_arr = tokens2id_array(sentence[1], token2id_dict['label'])
+            train_data_tokens2id_dict['label'].append(label_arr)
     data_tokens2id_dict_path = os.path.join(os.path.dirname(path_train), 'train.token2id.pkl')
-    dump_pkl_data(data_tokens2id_dict, data_tokens2id_dict_path)
+    dump_pkl_data(train_data_tokens2id_dict, data_tokens2id_dict_path)
+    # test
+    test_data_tokens2id_dict = {}
+    for j, col in enumerate(feature_cols):
+        feature_name = feature_names[j]
+        for sentence in test_data:
+            array = tokens2id_array(sentence[col], token2id_dict[feature_name])
+            if feature_name not in test_data_tokens2id_dict:
+                test_data_tokens2id_dict[feature_name] = list()
+            test_data_tokens2id_dict[feature_name].append(array)
+            if "label" not in test_data_tokens2id_dict:
+                test_data_tokens2id_dict["label"] = list()
+            label_arr = tokens2id_array(sentence[1], token2id_dict['label'])
+            test_data_tokens2id_dict['label'].append(label_arr)
+    data_tokens2id_dict_path = os.path.join(os.path.dirname(path_train), 'test.token2id.pkl')
+    dump_pkl_data(test_data_tokens2id_dict, data_tokens2id_dict_path)
 
 
 def init_model(configs):
@@ -247,9 +268,9 @@ def init_train_data(configs):
     data_utils = DataUtil(
         train_count, train_object_dict, data_names, use_char=use_char, char_max_len=char_max_len,
         batch_size=batch_size, max_len_limit=max_len_limit)
-    data_iter_train, data_iter_dev, data_iter_test = data_utils.split_dataset(proportions=(7, 2, 1), shuffle=False)
+    data_iter_train, data_iter_dev = data_utils.split_dataset(proportions=(8, 2), shuffle=False)
 
-    return data_iter_train, data_iter_dev, data_iter_test
+    return data_iter_train, data_iter_dev
 
 
 def init_test_data(configs):
@@ -258,9 +279,6 @@ def init_test_data(configs):
         data_test: DataRaw
         data_iter_test: DataIter
     """
-    feature_cols = configs['data_params']['feature_cols']
-    feature_names = configs['data_params']['feature_names']
-    root_alphabet = configs['data_params']['alphabet_params']['path']
     path_train = configs['data_params']['path_train']
     char_max_len = configs['model_params']['char_max_len']
     batch_size = configs['model_params']['batch_size']
@@ -273,32 +291,16 @@ def init_test_data(configs):
         data_names.append('char')
     data_names.append('label')
 
-    # load dict
-    token2id_dict = read_bin(os.path.join(root_alphabet, 'token2id_dict.pkl'))
-    # train raw data
-    data = load_data(path_train)
-    data_test = data[int(0.9 * len(data)):]
-    # load train data
-    data_tokens2id_dict = {}
-    for j, col in enumerate(feature_cols):
-        feature_name = feature_names[j]
-        for sentence in data_test:
-            array = tokens2id_array(sentence[col], token2id_dict[feature_name])
-            if feature_name not in data_tokens2id_dict:
-                data_tokens2id_dict[feature_name] = list()
-            data_tokens2id_dict[feature_name].append(array)
-            if "label" not in data_tokens2id_dict:
-                data_tokens2id_dict["label"] = list()
-            label_arr = tokens2id_array(sentence[-1], token2id_dict['label'])
-            data_tokens2id_dict['label'].append(label_arr)
+    # load test data
+    test_object_dict = read_bin(os.path.join(os.path.dirname(path_train), 'test.token2id.pkl'))
 
     # 拆分训练集
     data_utils = DataUtil(
-        len(data_test), data_tokens2id_dict, data_names, use_char=use_char, char_max_len=char_max_len,
+        len(test_object_dict["word"]), test_object_dict, data_names, use_char=use_char, char_max_len=char_max_len,
         batch_size=batch_size, max_len_limit=max_len_limit)
     [data_iter_test] = data_utils.split_dataset(proportions=(1,), shuffle=False)
 
-    return data_test, data_iter_test
+    return data_iter_test
 
 
 def init_optimizer(configs, model):
@@ -376,7 +378,7 @@ def train_model(configs):
     print(sl_model)
 
     # init data
-    data_iter_train, data_iter_dev, data_iter_test = init_train_data(configs)
+    data_iter_train, data_iter_dev = init_train_data(configs)
 
     # init optimizer
     optimizer, lr_decay = init_optimizer(configs, model=sl_model)
@@ -391,11 +393,13 @@ def train_model(configs):
 def test_model(configs):
     """测试模型
     """
+    path_test = configs['data_params']['path_test'] if 'path_test' in configs['data_params'] else None
     # init model
     model = load_model(configs)
 
     # init test data
-    data_test, data_iter_test = init_test_data(configs)
+    data_test = load_data(path_test)
+    data_iter_test = init_test_data(configs)
 
     # init infer
     if 'path_test_result' not in configs['data_params'] or \
@@ -440,8 +444,10 @@ def main():
         # 判断是否需要预处理
         if opts.preprocess:
             pre_processing(configs)
+            print("pre process 结束，开始训练模型。。。。")
         # 训练
         train_model(configs)
+        print("训练模型结束，开始测试。。。。")
     # test
     test_model(configs)
 

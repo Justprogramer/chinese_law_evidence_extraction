@@ -2,3 +2,7 @@ data/
 Tencent*/
 .idea
 log.*
+__pycache__
+test_file.py
+nohup.out
+logger.log

@@ -52,13 +52,10 @@ class Inference(object):
 
             logits = self.model(**feed_tensor_dict)
             # mask
-            mask = feed_tensor_dict[str(self.feature_names[0])] > 0
-            actual_lens = torch.sum(feed_tensor_dict[self.feature_names[0]] > 0, dim=1).int()
-            labels_batch = self.model.predict(logits, actual_lens, mask)
-            labels_pred.extend(labels_batch)
-            sys.stdout.write('sentence: {0} / {1}\r'.format(self.data_iter.iter_variable, self.data_iter.data_count))
-        sys.stdout.write('sentence: {0} / {1}\n'.format(self.data_iter.data_count, self.data_iter.data_count))
-
+            mask = feed_tensor_dict[str(self.model.feature_names[0])] > 0
+            actual_lens = torch.sum(feed_tensor_dict[self.model.feature_names[0]] > 0, dim=1).int()
+            label_ids_batch = self.model.predict(logits, actual_lens, mask)
+            labels_pred.extend(self.id2label(label_ids_batch))  # list(list(int))
         return labels_pred
 
     def infer2file(self):
@@ -102,6 +99,19 @@ class Inference(object):
         gold_label_all = self.label2id(gold_label_all)
         predict_label_all = self.label2id(predict_label_all)
         target_names = sorted(self.label2id_dict)
+        # for tag in sorted(self.label2id_dict):
+        #     if "-E" in tag:
+        #         target_names.append("举证方")
+        #     elif "-C" in tag:
+        #         target_names.append("证据说明")
+        #     elif "-T" in tag:
+        #         target_names.append("证据")
+        #     elif "-O" in tag:
+        #         target_names.append("质证意见")
+        #     elif "-A" in tag:
+        #         target_names.append("质证方")
+        #     else:
+        #         target_names.append("其他")
         file_result.write(classification_report(gold_label_all, predict_label_all, target_names=target_names))
         # file_result.write("\nprecision: %s, recall: %s, f1: %s" % (
         #     precision_score(gold_label_all, predict_label_all, average="macro"),
