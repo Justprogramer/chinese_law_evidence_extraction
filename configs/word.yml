@@ -12,8 +12,8 @@ data_params:
   path_test_result: ./data/test.txt.output  # default is path_test+'.output'
 
   # 定义特征列数, 以及特征别名
-  feature_cols: [0,1]
-  feature_names: [word,pos]  # feature alias
+  feature_cols: [0]
+  feature_names: [word]  # feature alias
 
   # alphabet参数及存放路径
   alphabet_params:
