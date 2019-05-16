@@ -82,7 +82,7 @@ class Inference(object):
                 feature_items = test_data_reader.__next__()
                 sent_len = len(feature_items[0])  # 句子实际长度
                 predict_labels = labels_batch[i]
-                gold_labels = feature_items[1]
+                gold_labels = feature_items[2]
                 gold_label_all += gold_labels
                 if len(predict_labels) < sent_len:  # 补全为`O`
                     print("predict_labels(%s)--> %s" % (len(predict_labels), predict_labels))

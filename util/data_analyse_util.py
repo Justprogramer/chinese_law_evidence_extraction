@@ -11,7 +11,7 @@ from win32com import client as wc
 
 import Args
 import util.common_util as my_util
-
+import nltk
 
 # 证据名称列表
 evidence_list = list()
@@ -243,14 +243,14 @@ def create_data(type=None):
                 #   #不保存全部为other标签的句子
                 #   data_list.append(([word for word in sentence], tag, d))
                 # 保存所有情况的标签
-                data_list.append(([word for word in sentence], tag, d))
+                data_list.append(([word for word in sentence], [pos for _, pos in nltk.pos_tag(sentence)], tag, d))
 
 
 # 标签统计
 def statistic_data():
     global o_tag_count, e_tag_count, t_tag_count, c_tag_count, a_tag_count, other_tag_count
     for train in [train_data, test_data]:
-        for sentence, tag, d in train:
+        for sentence, pos, tag, d in train:
             for t in tag:
                 if t == "B-E":
                     e_tag_count += 1
@@ -304,9 +304,9 @@ def main(options):
     start = time.time()
     if options:
         analyse_data()
-        statistic_data()
         save()
         dump_log()
+        statistic_data()
     with codecs.open("log.txt", "a", "utf-8") as fp:
         fp.write("处理数据结束：[%s], 费时：[%s]" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), time.time() - start))
 

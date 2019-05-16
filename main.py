@@ -43,7 +43,7 @@ def update_feature_dict(train_list, feature_dict, feature_cols, feature_names,
     """
     更新特征字典
     Args:
-        train_list: list(list) [[word,tag,fileName],...]
+        train_list: list(list) [[word,pos,tag,fileName],...]
         feature_dict: dict
         feature_cols: list(int)
         feature_names: list(str)
@@ -56,13 +56,12 @@ def update_feature_dict(train_list, feature_dict, feature_cols, feature_names,
                 token = normalize_word(token)
             feature_dict[feature_names[i]].update([token])
     if has_label:
-        for label in train_list[1]:
+        for label in train_list[2]:
             feature_dict['label'].add(label)
 
 
 def pre_processing(configs):
     path_train = configs['data_params']['path_train']
-    path_dev = configs['data_params']['path_dev'] if 'path_dev' in configs['data_params'] else None
     path_test = configs['data_params']['path_test'] if 'path_test' in configs['data_params'] else None
 
     feature_cols = configs['data_params']['feature_cols']
@@ -70,9 +69,6 @@ def pre_processing(configs):
     min_counts = configs['data_params']['alphabet_params']['min_counts']
     root_alphabet = configs['data_params']['alphabet_params']['path']
     path_pretrain_list = configs['data_params']['path_pretrain']
-
-    use_char = configs['model_params']['use_char']
-    max_word_len = configs['model_params']['char_max_len']
 
     normalize = configs['word_norm']
     feature_dict = {}
@@ -132,32 +128,32 @@ def pre_processing(configs):
     # 将token转成id
     # train
     train_data_tokens2id_dict = {}
-    for j, col in enumerate(feature_cols):
-        feature_name = feature_names[j]
-        for sentence in train_data:
+    for sentence in train_data:
+        for j, col in enumerate(feature_cols):
+            feature_name = feature_names[j]
             array = tokens2id_array(sentence[col], token2id_dict[feature_name])
             if feature_name not in train_data_tokens2id_dict:
                 train_data_tokens2id_dict[feature_name] = list()
             train_data_tokens2id_dict[feature_name].append(array)
-            if "label" not in train_data_tokens2id_dict:
-                train_data_tokens2id_dict["label"] = list()
-            label_arr = tokens2id_array(sentence[1], token2id_dict['label'])
-            train_data_tokens2id_dict['label'].append(label_arr)
+        if "label" not in train_data_tokens2id_dict:
+            train_data_tokens2id_dict["label"] = list()
+        label_arr = tokens2id_array(sentence[2], token2id_dict['label'])
+        train_data_tokens2id_dict['label'].append(label_arr)
     data_tokens2id_dict_path = os.path.join(os.path.dirname(path_train), 'train.token2id.pkl')
     dump_pkl_data(train_data_tokens2id_dict, data_tokens2id_dict_path)
     # test
     test_data_tokens2id_dict = {}
-    for j, col in enumerate(feature_cols):
-        feature_name = feature_names[j]
-        for sentence in test_data:
+    for sentence in test_data:
+        for j, col in enumerate(feature_cols):
+            feature_name = feature_names[j]
             array = tokens2id_array(sentence[col], token2id_dict[feature_name])
             if feature_name not in test_data_tokens2id_dict:
                 test_data_tokens2id_dict[feature_name] = list()
             test_data_tokens2id_dict[feature_name].append(array)
-            if "label" not in test_data_tokens2id_dict:
-                test_data_tokens2id_dict["label"] = list()
-            label_arr = tokens2id_array(sentence[1], token2id_dict['label'])
-            test_data_tokens2id_dict['label'].append(label_arr)
+        if "label" not in test_data_tokens2id_dict:
+            test_data_tokens2id_dict["label"] = list()
+        label_arr = tokens2id_array(sentence[2], token2id_dict['label'])
+        test_data_tokens2id_dict['label'].append(label_arr)
     data_tokens2id_dict_path = os.path.join(os.path.dirname(path_train), 'test.token2id.pkl')
     dump_pkl_data(test_data_tokens2id_dict, data_tokens2id_dict_path)
 

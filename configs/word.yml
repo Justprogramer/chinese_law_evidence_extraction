@@ -12,12 +12,12 @@ data_params:
   path_test_result: ./data/test.txt.output  # default is path_test+'.output'
 
   # 定义特征列数, 以及特征别名
-  feature_cols: [0]
-  feature_names: [word]  # feature alias
+  feature_cols: [0,1]
+  feature_names: [word,pos]  # feature alias
 
   # alphabet参数及存放路径
   alphabet_params:
-    min_counts: [0]
+    min_counts: [0,0]
     path: ./data/alphabet/  # 特征字典存放根目录
 
   # 预训练特征向量路径, 按feature_names顺序设置, 没有预训练向量则设为null
@@ -34,9 +34,9 @@ data_params:
 model_params:
 
   # embedding parameters, 若提供了path_pretrain参数, 则以预训练维度为准
-  embed_sizes: [300]
+  embed_sizes: [300,20]
   # 是否更新feature embedding table
-  require_grads: [true]
+  require_grads: [true,true]
 
   # char parameters
   use_char: false
